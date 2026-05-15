@@ -468,27 +468,23 @@ if(!checkbox.checked) return
 const name=section.querySelector("span").innerText
 text+=name+"\n"
 
-let first=true
+const lines=[]
 
-section.querySelectorAll(".ticket-line").forEach(line=>{
+section.querySelectorAll(".ticket-line a").forEach(a=>{
 
-let raw=line.querySelector("a").innerText
+let raw=a.innerText.trim()
 
 if(!includeStatus){
-
 let parts=raw.split("|")
 raw=parts.length>1?parts[1].trim():raw
-
 }
 
-text+=raw
-
-// only add newline between tasks, NOT after last
-text+="\n"
+lines.push(raw)
 
 })
 
-text+="\n" // single clean separation between assignees
+// join with SINGLE newline only
+text += lines.join("\n") + "\n\n"
 
 })
 
