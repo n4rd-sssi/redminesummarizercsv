@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Redmine Task Summarizer CSV</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+font-family:'Montserrat',sans-serif;
+background:#f4f6fb;
+margin:0;
+padding:40px;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+margin-bottom:25px;
+}
+
+.card{
+background:white;
+border-radius:10px;
+padding:25px;
+box-shadow:0 4px 15px rgba(0,0,0,0.08);
+margin-bottom:20px;
+}
+
+button{
+padding:10px 18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-weight:600;
+}
+
+.generate{
+background:#4CAF50;
+color:white;
+}
+
+.copy{
+background:#2196F3;
+color:white;
+}
+
+.small{
+background:#ddd;
+}
+
+.status-grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:8px;
+margin-top:10px;
+}
+
+.dropzone{
+border:2px dashed #bbb;
+border-radius:10px;
+padding:40px;
+text-align:center;
+color:#888;
+}
+
+.dropzone.dragover{
+border-color:#4CAF50;
+background:#f0fff0;
+}
+
+.assignee{
+margin-top:15px;
+}
+
+.assignee-header{
+font-weight:600;
+cursor:pointer;
+padding:8px;
+background:#eee;
+border-radius:6px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.assignee-content{
+padding-left:10px;
+display:none;
+}
+
+.ticket{
+margin:8px 0;
+}
+
+.ticket-line{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:15px;
+width:100%;
+}
+
+.ticket-left{
+flex:1;
+min-width:0;
+}
+
+.ticket-left a{
+color:black;
+text-decoration:none;
+}
+
+.ticket-left a:hover{
+text-decoration:underline;
+}
+
+.ticket-right{
+display:flex;
+align-items:center;
+gap:10px;
+min-width:180px;
+justify-content:flex-end;
+flex-shrink:0;
+}
+
+.progress{
+height:6px;
+background:#ddd;
+border-radius:3px;
+width:120px;
+overflow:hidden;
+}
+
+.bar{
+height:6px;
+background:#4CAF50;
+border-radius:3px;
+}
+
+.percent{
+font-size:13px;
+width:40px;
+text-align:right;
+}
+
+.sort-box{
+display:flex;
+align-items:flex-start;
+margin-top:15px;
+gap:20px;
+}
+
+.sort-left{
+display:flex;
+gap:40px;
+font-size:14px;
+}
+
+.sort-group{
+display:flex;
+flex-direction:column;
+}
+
+.sort-right{
+margin-left:auto;
+display:flex;
+align-items:center;
+gap:15px;
+}
+
+.assignee-controls{
+margin-bottom:15px;
+display:flex;
+gap:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Redmine Task Summarizer CSV</h1>
+
+<div class="card">
+
+<h3>Status Filter</h3>
+
+<button class="small" onclick="selectAll()">Select All</button>
+<button class="small" onclick="clearAll()">Clear All</button>
+
+<div class="status-grid">
+
+<label><input type="checkbox" value="New" checked>New</label>
+<label><input type="checkbox" value="Briefing Request">Briefing Request</label>
+<label><input type="checkbox" value="In Progress" checked>In Progress</label>
+<label><input type="checkbox" value="Pre-QA Request">Pre-QA Request</label>
+<label><input type="checkbox" value="QA Request" checked>QA Request</label>
+<label><input type="checkbox" value="QA Process">QA Process</label>
+<label><input type="checkbox" value="Feedback" checked>Feedback</label>
+<label><input type="checkbox" value="Final QA">Final QA</label>
+<label><input type="checkbox" value="PM Review">PM Review</label>
+<label><input type="checkbox" value="Specs Review">Specs Review</label>
+<label><input type="checkbox" value="Change of QA Start Date">Change of QA Start Date</label>
+<label><input type="checkbox" value="Change of Deployment Date">Change of Deployment Date</label>
+<label><input type="checkbox" value="Change Project Name">Change Project Name</label>
+<label><input type="checkbox" value="Ready for Inspection">Ready for Inspection</label>
+<label><input type="checkbox" value="Deploy Request">Deploy Request</label>
+<label><input type="checkbox" value="Development Request">Development Request</label>
+<label><input type="checkbox" value="On Hold">On Hold</label>
+<label><input type="checkbox" value="Closed">Closed</label>
+<label><input type="checkbox" value="Rejected">Rejected</label>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="dropzone" id="dropzone">
+Drag & Drop your CSV file here
+</div>
+
+<br>
+
+<div class="sort-box">
+
+<div class="sort-left">
+
+<div class="sort-group">
+<strong>Ticket Number</strong>
+<label><input type="radio" name="sortType" value="ticketAsc" checked>Ascending</label>
+<label><input type="radio" name="sortType" value="ticketDesc">Descending</label>
+</div>
+
+<div class="sort-group">
+<strong>% Done</strong>
+<label><input type="radio" name="sortType" value="progressAsc">Ascending</label>
+<label><input type="radio" name="sortType" value="progressDesc">Descending</label>
+</div>
+
+</div>
+
+<div class="sort-right">
+
+<label>
+<input type="checkbox" id="showStatus" checked>
+Include Status
+</label>
+
+<button class="generate" onclick="generate()">Generate</button>
+<button class="copy" onclick="copyOutput()">Copy Output</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="assignee-controls">
+<button class="small" onclick="selectAllAssignees()">Select All Assignees</button>
+<button class="small" onclick="clearAllAssignees()">Clear All Assignees</button>
+</div>
+
+<div id="output"></div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<script>
+
+let rows=[]
+
+const dropzone=document.getElementById("dropzone")
+
+dropzone.addEventListener("dragover",e=>{
+e.preventDefault()
+dropzone.classList.add("dragover")
+})
+
+dropzone.addEventListener("dragleave",()=>{
+dropzone.classList.remove("dragover")
+})
+
+dropzone.addEventListener("drop",e=>{
+
+e.preventDefault()
+dropzone.classList.remove("dragover")
+
+const file=e.dataTransfer.files[0]
+
+dropzone.innerHTML="Loading "+file.name+"..."
+
+Papa.parse(file,{
+header:true,
+skipEmptyLines:true,
+complete:function(results){
+
+rows=results.data
+dropzone.innerHTML="Loaded: "+file.name+" ("+rows.length+" rows)"
+
+}
+})
+
+})
+
+function getSelectedStatuses(){
+return Array.from(document.querySelectorAll(".status-grid input:checked"))
+.map(cb=>cb.value)
+}
+
+function generate(){
+
+const selectedStatuses=getSelectedStatuses()
+const sortType=document.querySelector('input[name="sortType"]:checked').value
+
+const groups={}
+
+rows.forEach(row=>{
+
+let assignee=(row["Assignee"]||"").trim()
+
+if(!assignee) assignee="Unassigned"
+
+const status=(row["Status"]||"").trim()
+
+if(selectedStatuses.length && !selectedStatuses.includes(status)) return
+
+if(!groups[assignee]) groups[assignee]=[]
+
+groups[assignee].push(row)
+
+})
+
+renderResults(groups,sortType)
+
+}
+
+function renderResults(groups,sortType){
+
+const output=document.getElementById("output")
+output.innerHTML=""
+
+Object.keys(groups).sort().forEach(name=>{
+
+let tickets=groups[name]
+
+if(sortType==="ticketAsc"){
+tickets.sort((a,b)=>Number(a["#"])-Number(b["#"]))
+}
+
+if(sortType==="ticketDesc"){
+tickets.sort((a,b)=>Number(b["#"])-Number(a["#"]))
+}
+
+if(sortType==="progressAsc"){
+tickets.sort((a,b)=>Number(a["% Done"])-Number(b["% Done"]))
+}
+
+if(sortType==="progressDesc"){
+tickets.sort((a,b)=>Number(b["% Done"])-Number(a["% Done"]))
+}
+
+const assigneeDiv=document.createElement("div")
+assigneeDiv.className="assignee"
+
+const header=document.createElement("div")
+header.className="assignee-header"
+
+const title=document.createElement("span")
+title.textContent=name+" ("+tickets.length+")"
+
+const checkbox=document.createElement("input")
+checkbox.type="checkbox"
+checkbox.className="assignee-checkbox"
+checkbox.checked=false
+
+header.appendChild(title)
+header.appendChild(checkbox)
+
+const content=document.createElement("div")
+content.className="assignee-content"
+
+header.onclick=(e)=>{
+if(e.target.tagName==="INPUT") return
+content.style.display=content.style.display==="block"?"none":"block"
+}
+
+tickets.forEach(t=>{
+
+const ticket=document.createElement("div")
+ticket.className="ticket"
+
+const line=document.createElement("div")
+line.className="ticket-line"
+
+const tracker=t["Tracker"]||""
+const status=t["Status"]||""
+const subject=t["Subject"]||""
+const id=t["#"]||""
+
+const percent=parseInt(t["% Done"]||0)
+
+const includeStatus=document.getElementById("showStatus").checked
+
+const text=includeStatus
+? `${status} | ${tracker} #${id} ${subject}`
+: `${tracker} #${id} ${subject}`
+
+const link=`https://redmine.sandmansystems.com/issues/${id}`
+
+line.innerHTML=`
+<div class="ticket-left">
+<a href="${link}" target="_blank">
+${text}
+</a>
+</div>
+
+<div class="ticket-right">
+<div class="progress">
+<div class="bar" style="width:${percent}%"></div>
+</div>
+<div class="percent">${percent}%</div>
+</div>
+`
+
+ticket.appendChild(line)
+
+content.appendChild(ticket)
+
+})
+
+assigneeDiv.appendChild(header)
+assigneeDiv.appendChild(content)
+
+output.appendChild(assigneeDiv)
+
+})
+
+}
+
+function copyOutput(){
+
+let text=""
+const includeStatus=document.getElementById("showStatus").checked
+
+document.querySelectorAll(".assignee").forEach(section=>{
+
+const checkbox=section.querySelector(".assignee-checkbox")
+
+if(!checkbox.checked) return
+
+const name=section.querySelector("span").innerText
+text+=name+"\n"
+
+let first=true
+
+section.querySelectorAll(".ticket-line").forEach(line=>{
+
+let raw=line.querySelector("a").innerText
+
+if(!includeStatus){
+
+let parts=raw.split("|")
+raw=parts.length>1?parts[1].trim():raw
+
+}
+
+text+=raw
+
+// only add newline between tasks, NOT after last
+text+="\n"
+
+})
+
+text+="\n" // single clean separation between assignees
+
+})
+
+navigator.clipboard.writeText(text.trim())
+
+alert("Filtered output copied!")
+
+}
+
+function selectAll(){
+document.querySelectorAll(".status-grid input").forEach(cb=>cb.checked=true)
+}
+
+function clearAll(){
+document.querySelectorAll(".status-grid input").forEach(cb=>cb.checked=false)
+}
+
+function selectAllAssignees(){
+document.querySelectorAll(".assignee-checkbox").forEach(cb=>cb.checked=true)
+}
+
+function clearAllAssignees(){
+document.querySelectorAll(".assignee-checkbox").forEach(cb=>cb.checked=false)
+}
+
+</script>
+
+</body>
+</html>
